@@ -13,13 +13,13 @@ import (
 	"time"
 )
 
+// Structs
 type Recommended struct {
 	Price float64 `json:"price"`
 }
 type Packages struct {
 	Recommended Recommended `json:"recommended"`
 }
-
 type Gig struct {
 	Packages Packages `json:"packages"`
 }
@@ -35,6 +35,7 @@ type QueryGigsAvg struct {
 	avg   float64
 }
 
+// Functions
 func Parsing(parserChannel chan Record) {
 	file, err := os.Open("input.csv")
 	if err != nil {
