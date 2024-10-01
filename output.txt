@@ -1,3 +1,29 @@
+logo design,56.77
+logo,71.25
+nft art,40.42
+data entry,22.71
+video editing,84.38
+nft,13.75
+wordpress,113.33
+voice over,61.25
+shopify website,162.50
+background removal,9.58
+website development,135.00
+minimalist logo,47.08
+business card,20.83
+photoshop,10.83
+photo editing,10.00
+dropshipping,148.56
+wordpress website design,87.50
+copywriting,345.00
+python,161.25
+youtube thumbnail,18.75
+illustration,33.33
+logo animation,107.71
+t-shirt design,40.31
+twitch emotes,13.12
+excel,59.58
+3d modeling,40.21
 logo design,54.69
 logo,77.50
 nft art,40.42
@@ -25,8 +51,49 @@ twitch emotes,13.65
 excel,64.79
 3d modeling,55.83
 web design,136.67
-shopify store,211.25
+shopify store,162.50
 twitch overlay,50.62
+tiktok,57.08
+wordpress website,108.33
+anime,55.00
+twitch,16.04
+art,27.92
+powerpoint presentation,135.00
+video editor,72.92
+flyer design,47.29
+translation,27.50
+youtube intro,52.50
+article writing,8.75
+logo design business,40.00
+wix,90.00
+transcription,7.08
+java,60.42
+webflow,132.50
+jewelry retouch,10.00
+branding,373.85
+photoshop editing,13.54
+drawing,42.92
+flyer,43.75
+building mobile app,201.88
+business logo,31.88
+ghostwriter,159.38
+3d,32.50
+music,57.50
+children story book illustration,21.25
+3d model,37.50
+voice actor,39.58
+character design,37.08
+vector tracing,10.00
+nft collection,96.04
+bulk t shirt,25.83
+explainer video,243.12
+album cover,50.00
+voiceover,61.25
+autocad,29.17
+social media post design,30.42
+packaging design,77.71
+design,41.46
+writing,61.04
 tiktok,66.98
 wordpress website,107.92
 anime,55.42

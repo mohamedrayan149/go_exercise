@@ -13,10 +13,27 @@ import (
 	"time"
 )
 
+type Recommended struct {
+	Price float64 `json:"price"`
+}
+
+type Packages struct {
+	Recommended Recommended `json:"recommended"`
+}
+
+type Gig struct {
+	Packages Packages `json:"packages"`
+}
+
+type Response struct {
+	Data []Gig `json:"gigs"`
+}
+
 type Record struct {
 	query           string
 	numberOfResults string
 }
+
 type QueryGigsAvg struct {
 	query string
 	avg   float64
@@ -24,11 +41,16 @@ type QueryGigsAvg struct {
 
 func Parsing(parserChannel chan Record) {
 	file, err := os.Open("input.csv")
-	defer file.Close()
 	if err != nil {
 		defer file.Close()
 		log.Fatal(err)
 	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(file)
 	records, err := csv.NewReader(file).ReadAll()
 	if err != nil {
 		log.Fatal(err)
@@ -68,31 +90,25 @@ func Searching(ch <-chan Record, searchChannel chan QueryGigsAvg) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		// Unmarshal into a generic map
-		var result map[string]interface{}
-		err = json.Unmarshal(body, &result)
+		// Unmarshal the JSON into the struct
+		var response Response
+		err = json.Unmarshal(body, &response)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		if data, ok := result["gigs"].([]interface{}); ok {
-			sum := 0.0
-			for _, item := range data {
-				gig := item.(map[string]interface{})
-				packages := gig["packages"].(map[string]interface{})
-				recommended := packages["recommended"].(map[string]interface{})
-				// the price type must be like the dynamic map
-				price := recommended["price"].(float64)
-				sum += price
-			}
-			searchChannel <- QueryGigsAvg{record.query, sum / float64(len(data))}
+		// Access the deeply nested fields
+		sum := 0.0
+		for _, gig := range response.Data {
+			sum += gig.Packages.Recommended.Price
 		}
+		searchChannel <- QueryGigsAvg{record.query, sum / float64(len(response.Data))}
 	}
 	close(searchChannel)
 }
 func PriceCalculator(ch chan QueryGigsAvg) {
-	file2, err := os.Create("output.txt")
+	file, err := os.Create("output.txt")
 	if err != nil {
+		defer file.Close()
 		log.Fatal(err)
 	}
 	defer func(file *os.File) {
@@ -100,8 +116,8 @@ func PriceCalculator(ch chan QueryGigsAvg) {
 		if err != nil {
 			log.Fatal(err)
 		}
-	}(file2)
-	writer := csv.NewWriter(file2)
+	}(file)
+	writer := csv.NewWriter(file)
 	defer writer.Flush()
 	for query := range ch {
 		line := []string{query.query, fmt.Sprintf("%.2f", query.avg)}
