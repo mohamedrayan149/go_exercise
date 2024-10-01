@@ -42,8 +42,8 @@ type QueryGigsAvg struct {
 func Parsing(parserChannel chan Record) {
 	file, err := os.Open("input.csv")
 	if err != nil {
+		defer file.Close()
 		log.Fatal(err)
-		file.Close()
 	}
 	defer func(file *os.File) {
 		err := file.Close()
@@ -58,7 +58,6 @@ func Parsing(parserChannel chan Record) {
 	for _, record := range records {
 		if len(record) != 2 {
 			log.Println("The input not good !:", record)
-			// todo ask adi if it should continue or break
 			continue
 		}
 		parserChannel <- Record{query: record[0], numberOfResults: record[1]}
