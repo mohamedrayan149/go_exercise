@@ -16,7 +16,6 @@ import (
 type Recommended struct {
 	Price float64 `json:"price"`
 }
-
 type Packages struct {
 	Recommended Recommended `json:"recommended"`
 }
@@ -24,16 +23,13 @@ type Packages struct {
 type Gig struct {
 	Packages Packages `json:"packages"`
 }
-
 type Response struct {
 	Data []Gig `json:"gigs"`
 }
-
 type Record struct {
 	query           string
 	numberOfResults string
 }
-
 type QueryGigsAvg struct {
 	query string
 	avg   float64
