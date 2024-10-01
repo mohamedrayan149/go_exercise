@@ -18,20 +18,11 @@ type Record struct {
 	numberOfResults string
 }
 
-/*
-type QueryGigsPrice struct {
-	query   string
-	sum     float64
-	gigsNum int
-}
-*/
-
 type QueryGigsAvg struct {
 	query string
 	avg   float64
 }
 
-// todo test input_with_errors
 func Parsing(parserChannel chan Record) {
 	file, err := os.Open("input.csv")
 	defer file.Close()
@@ -46,7 +37,6 @@ func Parsing(parserChannel chan Record) {
 	for _, record := range records {
 		if len(record) != 2 {
 			log.Println("The input not good !:", record)
-			// todo ask adi if it should continue or break
 			continue
 		}
 		parserChannel <- Record{query: record[0], numberOfResults: record[1]}
