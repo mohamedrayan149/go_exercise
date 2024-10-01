@@ -41,11 +41,16 @@ type QueryGigsAvg struct {
 
 func Parsing(parserChannel chan Record) {
 	file, err := os.Open("input.csv")
-	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 		file.Close()
 	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(file)
 	records, err := csv.NewReader(file).ReadAll()
 	if err != nil {
 		log.Fatal(err)
@@ -102,10 +107,9 @@ func Searching(ch <-chan Record, searchChannel chan QueryGigsAvg) {
 	close(searchChannel)
 }
 func PriceCalculator(ch chan QueryGigsAvg) {
-	file2, err := os.Create("output.txt")
-	defer file2.Close()
+	file, err := os.Create("output.txt")
 	if err != nil {
-		defer file2.Close()
+		defer file.Close()
 		log.Fatal(err)
 	}
 	defer func(file *os.File) {
@@ -113,8 +117,8 @@ func PriceCalculator(ch chan QueryGigsAvg) {
 		if err != nil {
 			log.Fatal(err)
 		}
-	}(file2)
-	writer := csv.NewWriter(file2)
+	}(file)
+	writer := csv.NewWriter(file)
 	defer writer.Flush()
 	for query := range ch {
 		line := []string{query.query, fmt.Sprintf("%.2f", query.avg)}
@@ -156,24 +160,3 @@ func main() {
 	}
 	fmt.Printf("Execution time : %s \n", time.Since(start))
 }
-
-// Unmarshal into a generic map
-/*
-	var result map[string]interface{}
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if data, ok := result["gigs"].([]interface{}); ok {
-		sum := 0.0
-		for _, item := range data {
-			gig := item.(map[string]interface{})
-			packages := gig["packages"].(map[string]interface{})
-			recommended := packages["recommended"].(map[string]interface{})
-			// the price type must be like the dynamic map
-			price := recommended["price"].(float64)
-			sum += price
-		}
-
-*/
