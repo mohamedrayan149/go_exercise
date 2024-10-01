@@ -17,7 +17,6 @@ type Record struct {
 	query           string
 	numberOfResults string
 }
-
 type QueryGigsAvg struct {
 	query string
 	avg   float64
@@ -27,8 +26,8 @@ func Parsing(parserChannel chan Record) {
 	file, err := os.Open("input.csv")
 	defer file.Close()
 	if err != nil {
+		defer file.Close()
 		log.Fatal(err)
-		file.Close()
 	}
 	records, err := csv.NewReader(file).ReadAll()
 	if err != nil {
@@ -144,5 +143,3 @@ func main() {
 	}
 	fmt.Printf("Execution time : %s \n", time.Since(start))
 }
-
-/////////////////////
