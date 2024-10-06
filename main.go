@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"golang.org/x/sync/errgroup"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -14,6 +13,7 @@ import (
 )
 
 // Structs
+
 type Recommended struct {
 	Price float64 `json:"price"`
 }
@@ -30,105 +30,95 @@ type Response struct {
 }
 
 type Record struct {
-	query           string
-	numberOfResults string
+	queryWithoutSpaces string
+	numberOfResults    string
+	query              string
 }
 
-type QueryGigsAvg struct {
-	query string
-	avg   float64
+type QueryGigsData struct {
+	query    string
+	response Response
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Functions
-func Parsing(parserChannel chan Record) {
+
+func Parsing(parserChannel chan Record) error {
 	file, err := os.Open("input.csv")
-	if err != nil {
-		defer file.Close()
-		log.Fatal(err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(file)
+	defer file.Close()
+	defer close(parserChannel)
 	records, err := csv.NewReader(file).ReadAll()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	for _, record := range records {
 		if len(record) != 2 {
-			log.Println("The input not good !:", record)
-			continue
+			return nil
 		}
-		parserChannel <- Record{query: record[0], numberOfResults: record[1]}
+		originalQuery := record[0]
+		queryString := strings.ReplaceAll(record[0], " ", "")
+		numberOfResults := strings.ReplaceAll(string(record[1]), " ", "")
+		parserChannel <- Record{queryWithoutSpaces: queryString, numberOfResults: numberOfResults, query: originalQuery}
 	}
-	close(parserChannel)
+	return nil
 }
-func Searching(ch <-chan Record, searchChannel chan QueryGigsAvg) {
-
+func Searching(ch <-chan Record, searchChannel chan QueryGigsData) error {
+	defer close(searchChannel)
 	for record := range ch {
 		// request should be without spaces
-		queryString := strings.ReplaceAll(record.query, " ", "")
-		numberOfResults := strings.ReplaceAll(string(record.numberOfResults), " ", "")
 		request := fmt.Sprintf("http://kube-lb.fiverrdev.com/go-searcher/api/v5/search/auto?"+
 			"query_string=%s&page_size=%s&shuffle=false&page_ctx_id=309e5608edaa59e1eb8397c5880b625a"+
 			"&user_id=104151323&user_guid=36fa0150-82f9-4240-b4c8-f97d26212dfa&currency=USD",
-			queryString, numberOfResults)
+			record.queryWithoutSpaces, record.numberOfResults)
 		resp, err := http.Get(request)
 		if err != nil {
-			// log.fatal terminates the program so no need for break
-			log.Fatal(err)
+			return err
 		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				fmt.Println("error closing body")
-			}
-		}(resp.Body)
+		defer resp.Body.Close()
+
 		// Read the response body
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		// Unmarshal the JSON into the struct
 		var response Response
 		err = json.Unmarshal(body, &response)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		// Access the deeply nested fields
+		searchChannel <- QueryGigsData{record.query, response}
+	}
+
+	return nil
+}
+func PriceCalculator(ch chan QueryGigsData) error {
+	file, err := os.Create("output.txt")
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+	writer := csv.NewWriter(file)
+	defer writer.Flush() // this ensures that the data written to the file
+	for query := range ch {
+
+		// calculation start
 		sum := 0.0
-		for _, gig := range response.Data {
+		for _, gig := range query.response.Data {
 			sum += gig.Packages.Recommended.Price
 		}
-		searchChannel <- QueryGigsAvg{record.query, sum / float64(len(response.Data))}
-	}
-	close(searchChannel)
-}
-func PriceCalculator(ch chan QueryGigsAvg) {
-	file, err := os.Create("output.txt")
-	if err != nil {
-		defer file.Close()
-		log.Fatal(err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(file)
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-	for query := range ch {
-		line := []string{query.query, fmt.Sprintf("%.2f", query.avg)}
+		//
+		line := []string{query.query, fmt.Sprintf("%.2f", sum/float64(len(query.response.Data)))}
 		err = writer.Write(line)
 		if err != nil {
-			fmt.Println("Error writing record:", err)
-			return
+			return err
 		}
 	}
+	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	var group errgroup.Group
@@ -136,19 +126,19 @@ func main() {
 	//Parser stage
 	parserChannel := make(chan Record)
 	group.Go(func() error {
-		Parsing(parserChannel)
-		return nil
+		return Parsing(parserChannel)
+
 	})
 	// Searcher stage
-	searchChannel := make(chan QueryGigsAvg)
+	searchChannel := make(chan QueryGigsData)
 	group.Go(func() error {
-		Searching(parserChannel, searchChannel)
-		return nil
+		return Searching(parserChannel, searchChannel)
+
 	})
 	//price calculator stage
 	group.Go(func() error {
-		PriceCalculator(searchChannel)
-		return nil
+		return PriceCalculator(searchChannel)
+
 	})
 
 	if err := group.Wait(); err != nil {
